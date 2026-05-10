@@ -1,0 +1,58 @@
+{
+  "entities": {
+    "Firm": {
+      "title": "VIP Arac Donusum Firmasi",
+      "description": "Google Maps veya manuel arastirma ile bulunan firmalar",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "website": { "type": "string" },
+        "location": { "type": "string" },
+        "specialization": { "type": "string" },
+        "popularity": { "type": "string" },
+        "characteristics": { "type": "string" },
+        "foundAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["yeni", "iletisimde", "anlasildi", "reddedildi"] }
+      },
+      "required": ["name", "location"]
+    },
+    "ContactNote": {
+      "title": "Iletisim Notu",
+      "description": "Firma ile yapilan gorusmelerin notlari",
+      "type": "object",
+      "properties": {
+        "firmId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "content": { "type": "string" },
+        "author": { "type": "string" }
+      },
+      "required": ["firmId", "content"]
+    },
+    "SearchTask": {
+      "title": "Otomatik Tarama Gorevi",
+      "description": "Cronjob tarafindan takip edilen sehir tarama gorevleri",
+      "type": "object",
+      "properties": {
+        "city": { "type": "string" },
+        "status": { "type": "string", "enum": ["bekliyor", "isleniyor", "tamamlandi", "hata"] },
+        "lastChecked": { "type": "string", "format": "date-time" },
+        "error": { "type": "string" }
+      },
+      "required": ["city", "status"]
+    }
+  },
+  "firestore": {
+    "firms": {
+      "schema": "Firm",
+      "description": "Sistemdeki tum VIP firmalari"
+    },
+    "firms/{firmId}/notes": {
+      "schema": "ContactNote",
+      "description": "Firma ozelindeki iletisim gecmisi"
+    },
+    "tasks": {
+      "schema": "SearchTask",
+      "description": "Arka planda calisan sehir tarama listesi"
+    }
+  }
+}

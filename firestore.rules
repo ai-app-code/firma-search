@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // --- Entity Validations ---
+    
+    function isValidFirm(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 200
+          && data.location is string && data.location.size() <= 500
+          && (data.get('website', '') is string)
+          && (data.get('status', 'yeni') in ['yeni', 'iletisimde', 'anlasildi', 'reddedildi']);
+    }
+
+    function isValidTask(data) {
+      return data.city is string && data.city.size() > 0 && data.city.size() <= 100
+          && data.status in ['bekliyor', 'isleniyor', 'tamamlandi', 'hata'];
+    }
+
+    function isValidNote(data) {
+      return data.content is string && data.content.size() > 0 && data.content.size() <= 2000;
+    }
+
+    // --- Collection Matches ---
+
+    match /firms/{firmId} {
+      // In this version, we allow public reads for the demo, but locked writes
+      allow read: if true; 
+      allow create: if isValidFirm(incoming());
+      allow update: if (
+        isValidFirm(incoming()) && (
+          // Action: Status Update
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) ||
+          // Action: Full Edit
+          incoming().diff(existing()).affectedKeys().hasAll(['name', 'location'])
+        )
+      );
+      allow delete: if true; // Demo purposes
+
+      match /notes/{noteId} {
+        allow read: if true;
+        allow create: if isValidNote(incoming());
+      }
+    }
+
+    match /tasks/{taskId} {
+      allow read: if true;
+      allow create: if isValidTask(incoming());
+      allow update: if isValidTask(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasAny(['status', 'lastChecked'])
+      );
+      allow delete: if true;
+    }
+  }
+}
